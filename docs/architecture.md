@@ -235,7 +235,8 @@ agentic-developer-environment/
 │   │   │   ├── 003_agent_runs.sql
 │   │   │   ├── 004_artifacts.sql
 │   │   │   ├── 005_context.sql
-│   │   │   └── 006_metrics.sql
+│   │   │   ├── 006_metrics.sql
+│   │   │   └── 007_checkpoint_writes.sql  # checkpoint_ns + checkpoint_writes table
 │   │   └── seed.sql
 │   └── docker/
 │       └── nginx.conf                 # Reverse proxy config
@@ -265,6 +266,7 @@ erDiagram
     agent_runs ||--o{ agent_metrics : tracks
     projects ||--o{ context_chunks : indexed_from
     tasks ||--o{ workflow_checkpoints : persists
+    workflow_checkpoints ||--o{ checkpoint_writes : has
 
     projects {
         uuid id PK
@@ -365,9 +367,20 @@ erDiagram
         uuid id PK
         uuid task_id FK
         text thread_id
+        text checkpoint_ns "subgraph namespace"
         text node_name
         jsonb state_snapshot
         int step_number
+        timestamp created_at
+    }
+
+    checkpoint_writes {
+        uuid id PK
+        uuid checkpoint_id FK
+        text task_id
+        text task_path
+        text channel
+        jsonb value
         timestamp created_at
     }
 
@@ -384,7 +397,8 @@ erDiagram
 ### Key Schema Decisions
 
 - **`context_chunks.embedding`** — Uses the `pgvector` extension for native vector similarity search directly in Supabase, eliminating the need for a separate vector database.
-- **`workflow_checkpoints`** — LangGraph checkpoint persistence stored in Supabase so workflows survive service restarts and can be replayed or forked from any historical state.
+- **`workflow_checkpoints`** — LangGraph checkpoint persistence stored in Supabase so workflows survive service restarts and can be replayed or forked from any historical state. The `checkpoint_ns` column stores the LangGraph subgraph namespace, forming a composite index `(thread_id, checkpoint_ns, step_number DESC)` for efficient latest-checkpoint lookups.
+- **`checkpoint_writes` (separate table)** — Pending channel writes from `aput_writes` are stored as individual rows rather than a JSONB array inside `workflow_checkpoints`. This matches the `langgraph-checkpoint-postgres` design: pure-append writes avoid row-level update contention when multiple nodes write concurrently, and `ON DELETE CASCADE` from `workflow_checkpoints` keeps cleanup automatic.
 - **`agent_runs` tracks `tokens_in`/`tokens_out`/`latency_ms`** — Enables per-agent cost analysis and reliability metrics; feeds the `/api/v1/metrics` endpoint.
 - **`task_steps.ordinal`** — Ordered integer enables the planner to prescribe step sequence while allowing the supervisor to skip, retry, or reorder steps at runtime.
 - **RLS policies** — All tables have Supabase Row-Level Security scoped to `project_id` for multi-tenant isolation. Application code never bypasses RLS.
@@ -431,6 +445,25 @@ CREATE TABLE context_chunks (
     indexed_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX ON context_chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- 007_checkpoint_writes.sql
+-- Add subgraph namespace column to workflow_checkpoints and update its index
+ALTER TABLE workflow_checkpoints
+    ADD COLUMN checkpoint_ns TEXT NOT NULL DEFAULT '';
+
+CREATE INDEX ON workflow_checkpoints (thread_id, checkpoint_ns, step_number DESC);
+
+-- Separate table for pending channel writes (mirrors langgraph-checkpoint-postgres design)
+CREATE TABLE checkpoint_writes (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    checkpoint_id  UUID NOT NULL REFERENCES workflow_checkpoints(id) ON DELETE CASCADE,
+    task_id        TEXT NOT NULL,
+    task_path      TEXT NOT NULL DEFAULT '',
+    channel        TEXT NOT NULL,
+    value          JSONB NOT NULL,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ON checkpoint_writes (checkpoint_id);
 ```
 
 ---
