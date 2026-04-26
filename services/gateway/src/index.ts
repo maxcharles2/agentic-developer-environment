@@ -87,7 +87,7 @@ function buildServer() {
   app.register(rateLimitPlugin);
 
   // -- TODO: Register route plugins ------------------------------------------
-  // app.register(import("./routes/projects.js"), { prefix: "/api/v1/projects" });
+  app.register(import("./routes/projects.js"), { prefix: "/api/v1/projects" });
   // app.register(import("./routes/tasks.js"),    { prefix: "/api/v1/tasks" });
   // app.register(import("./routes/artifacts.js"),{ prefix: "/api/v1/artifacts" });
   // app.register(import("./routes/metrics.js"),  { prefix: "/api/v1/metrics" });
