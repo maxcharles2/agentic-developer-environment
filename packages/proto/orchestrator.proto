@@ -1,0 +1,41 @@
+syntax = "proto3";
+package ade.orchestrator;
+option go_package = "ade/orchestrator";
+
+service OrchestratorService {
+  rpc RunWorkflow(WorkflowRequest) returns (stream WorkflowEvent);
+  rpc GetWorkflowStatus(WorkflowId) returns (WorkflowStatus);
+  rpc CancelWorkflow(WorkflowId) returns (Ack);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message WorkflowRequest {
+  string task_id = 1;
+  string project_id = 2;
+  string prompt = 3;
+  map<string, string> metadata = 4;
+}
+
+message WorkflowEvent {
+  string event_type = 1;
+  string step_id = 2;
+  string payload = 3;  // JSON-encoded
+  int64 timestamp = 4;
+}
+
+message WorkflowId { string id = 1; }
+
+message WorkflowStatus {
+  string task_id = 1;
+  string status = 2;
+  int32 current_step = 3;
+  int32 total_steps = 4;
+  string current_agent = 5;
+}
+
+message Ack { bool success = 1; string message = 2; }
+
+message HealthCheckRequest {}
+message HealthCheckResponse {
+  string status = 1;  // "SERVING" | "NOT_SERVING"
+}

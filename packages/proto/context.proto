@@ -1,0 +1,50 @@
+syntax = "proto3";
+package ade.context;
+
+service ContextService {
+  rpc IndexRepository(IndexRequest) returns (IndexResult);
+  rpc RetrieveContext(ContextQuery) returns (ContextChunks);
+  rpc WatchChanges(WatchRequest) returns (stream ChangeEvent);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message IndexRequest {
+  string project_id = 1;
+  string repo_path = 2;
+  bool force_reindex = 3;
+}
+
+message IndexResult {
+  int32 chunks_indexed = 1;
+  int32 files_processed = 2;
+  float duration_s = 3;
+}
+
+message ContextQuery {
+  string project_id = 1;
+  string query = 2;
+  int32 top_k = 3;
+  float threshold = 4;
+}
+
+message ContextChunk {
+  string id = 1;
+  string file_path = 2;
+  string content = 3;
+  float score = 4;
+  string metadata_json = 5;
+}
+
+message ContextChunks { repeated ContextChunk chunks = 1; }
+message WatchRequest { string project_id = 1; string repo_path = 2; }
+
+message ChangeEvent {
+  string file_path = 1;
+  string change_type = 2;  // "created" | "modified" | "deleted"
+  int64 timestamp = 3;
+}
+
+message HealthCheckRequest {}
+message HealthCheckResponse {
+  string status = 1;  // "SERVING" | "NOT_SERVING"
+}
