@@ -1,0 +1,25 @@
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/python
+    out: ../../services/orchestrator/src/generated
+    include_imports: true
+  - remote: buf.build/grpc/python
+    out: ../../services/orchestrator/src/generated
+
+  - remote: buf.build/protocolbuffers/python
+    out: ../../services/sandbox/src/generated
+    include_imports: true
+  - remote: buf.build/grpc/python
+    out: ../../services/sandbox/src/generated
+
+  - remote: buf.build/protocolbuffers/python
+    out: ../../services/context/src/generated
+    include_imports: true
+  - remote: buf.build/grpc/python
+    out: ../../services/context/src/generated
+
+  - remote: buf.build/community/stephenh-ts-proto
+    out: ../../services/gateway/src/generated
+    opt:
+      - outputServices=grpc-js
+      - esModuleInterop=true
