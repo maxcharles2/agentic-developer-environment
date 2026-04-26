@@ -1,0 +1,43 @@
+[project]
+name = "ade-orchestrator"
+version = "0.1.0"
+description = "LangGraph supervisor and agent subgraphs for the Agentic Developer Environment"
+requires-python = ">=3.12"
+dependencies = [
+    "grpcio>=1.62",
+    "grpcio-tools>=1.62",
+    "langgraph>=0.2",
+    "langchain-core>=0.2",
+    "langchain-openai>=0.1",
+    "langchain-anthropic>=0.1",
+    "supabase>=2.4",
+    "redis[hiredis]>=5.0",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "ade-types @ file:../../packages/shared-types/python",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+serve = "src.server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

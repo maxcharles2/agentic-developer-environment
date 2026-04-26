@@ -61,7 +61,8 @@ services:
 
   orchestrator:
     build:
-      context: services/orchestrator
+      context: .
+      dockerfile: services/orchestrator/Dockerfile
     ports:
       - "50051:50051"
     environment:
