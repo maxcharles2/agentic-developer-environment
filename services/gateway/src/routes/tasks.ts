@@ -15,13 +15,20 @@ function isUUID(value: string): boolean {
   return UUID_RE.test(value);
 }
 
+interface TasksPluginOptions {
+  grpcUrl?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Plugin
 // ---------------------------------------------------------------------------
 
-async function plugin(fastify: FastifyInstance): Promise<void> {
+async function plugin(
+  fastify: FastifyInstance,
+  opts: TasksPluginOptions,
+): Promise<void> {
   const orchestrator = createOrchestratorClient(
-    process.env.ORCHESTRATOR_GRPC_URL ?? "localhost:50051",
+    opts.grpcUrl ?? "localhost:50051",
   );
 
   // -- POST / — Submit task --------------------------------------------------
