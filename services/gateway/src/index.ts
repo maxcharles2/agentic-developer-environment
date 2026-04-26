@@ -3,7 +3,7 @@ import authPlugin from "./middleware/auth.js";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import websocket from "@fastify/websocket";
-import rateLimit from "@fastify/rate-limit";
+import rateLimitPlugin from "./middleware/rateLimit.js";
 import Redis from "ioredis";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -18,6 +18,7 @@ const envSchema = z.object({
   SUPABASE_URL: z.string(),
   SUPABASE_SERVICE_KEY: z.string(),
   ORCHESTRATOR_GRPC_URL: z.string().default("localhost:50051"),
+  RATE_LIMIT_PER_MINUTE: z.coerce.number().default(100),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),
@@ -62,11 +63,6 @@ function buildServer() {
 
   app.register(websocket);
 
-  app.register(rateLimit, {
-    max: 100,
-    timeWindow: "1 minute",
-  });
-
   // -- Shared clients (decorated onto the Fastify instance) ------------------
 
   app.decorate("redis", new Redis(config.REDIS_URL));
@@ -87,8 +83,8 @@ function buildServer() {
   // -- Auth middleware --------------------------------------------------------
   app.register(authPlugin);
 
-  // -- TODO: Register rate-limit middleware plugin ---------------------------
-  // app.register(import("./plugins/rateLimit.js"));
+  // -- Rate-limit middleware (per-project, fixed-window via Redis) ------------
+  app.register(rateLimitPlugin);
 
   // -- TODO: Register route plugins ------------------------------------------
   // app.register(import("./routes/projects.js"), { prefix: "/api/v1/projects" });
