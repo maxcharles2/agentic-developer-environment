@@ -86,7 +86,7 @@ function buildServer() {
   // -- Rate-limit middleware (per-project, fixed-window via Redis) ------------
   app.register(rateLimitPlugin);
 
-  // -- TODO: Register route plugins ------------------------------------------
+  // -- Route plugins ----------------------------------------------------------
   app.register(import("./routes/projects.js"), { prefix: "/api/v1/projects" });
   // app.register(import("./routes/tasks.js"),    { prefix: "/api/v1/tasks" });
   // app.register(import("./routes/artifacts.js"),{ prefix: "/api/v1/artifacts" });
