@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply, preHandlerHookHandler } from "fastify";
 import {
+  ApproveStepRequestSchema,
   CreateTaskRequestSchema,
   CreateProjectRequestSchema,
   UpdateProjectRequestSchema,
@@ -47,6 +48,8 @@ export function createValidator<T>(
 // ---------------------------------------------------------------------------
 
 export const validateCreateTask = createValidator(CreateTaskRequestSchema);
+
+export const validateApproveStep = createValidator(ApproveStepRequestSchema);
 
 export const validateCreateProject = createValidator(CreateProjectRequestSchema);
 
