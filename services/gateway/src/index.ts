@@ -95,8 +95,8 @@ function buildServer() {
   app.register(import("./routes/artifacts.js"), { prefix: "/api/v1/tasks" });
   // app.register(import("./routes/metrics.js"),  { prefix: "/api/v1/metrics" });
 
-  // -- TODO: Register WebSocket handler plugin --------------------------------
-  // app.register(import("./plugins/ws.js"));
+  // -- WebSocket task-stream handler -----------------------------------------
+  app.register(import("./ws/taskStream.js"), { prefix: "/ws/tasks" });
 
   return app;
 }
