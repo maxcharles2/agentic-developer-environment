@@ -1,10 +1,12 @@
 # Stage 1: builder
 FROM node:22-slim AS builder
 WORKDIR /app
-COPY package*.json ./
+# Copy the shared-types package so the file: dependency resolves during npm ci
+COPY packages/shared-types/typescript ./packages/shared-types/typescript
+COPY services/gateway/package*.json ./
 RUN npm ci
-COPY tsconfig.json ./
-COPY src ./src
+COPY services/gateway/tsconfig.json ./
+COPY services/gateway/src ./src
 RUN npm run build
 
 # Stage 2: runtime
