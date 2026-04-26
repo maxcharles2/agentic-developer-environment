@@ -58,7 +58,12 @@ function callUnary<Req, Res>(
 ): Promise<Res> {
   return new Promise<Res>((resolve, reject) => {
     const deadline = new Date(Date.now() + deadlineMs);
-    (stub as Record<string, unknown> & grpc.Client)[method](
+    ((stub as Record<string, unknown> & grpc.Client)[method] as (
+      req: Req,
+      metadata: grpc.Metadata,
+      options: { deadline: Date },
+      callback: (err: grpc.ServiceError | null, response: Res) => void,
+    ) => void)(
       request,
       new grpc.Metadata(),
       { deadline },
@@ -86,11 +91,15 @@ async function* callServerStream<Req, Res>(
   deadlineMs = 30_000,
 ): AsyncIterable<Res> {
   const deadline = new Date(Date.now() + deadlineMs);
-  const call = (stub as Record<string, unknown> & grpc.Client)[method](
+  const call = ((stub as Record<string, unknown> & grpc.Client)[method] as (
+    req: Req,
+    metadata: grpc.Metadata,
+    options: { deadline: Date },
+  ) => grpc.ClientReadableStream<Res>)(
     request,
     new grpc.Metadata(),
     { deadline },
-  ) as grpc.ClientReadableStream<Res>;
+  );
 
   try {
     for await (const chunk of call) {
