@@ -92,7 +92,7 @@ function buildServer() {
     prefix: "/api/v1/tasks",
     grpcUrl: config.ORCHESTRATOR_GRPC_URL,
   });
-  // app.register(import("./routes/artifacts.js"),{ prefix: "/api/v1/artifacts" });
+  app.register(import("./routes/artifacts.js"), { prefix: "/api/v1/tasks" });
   // app.register(import("./routes/metrics.js"),  { prefix: "/api/v1/metrics" });
 
   // -- TODO: Register WebSocket handler plugin --------------------------------
