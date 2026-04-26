@@ -100,7 +100,7 @@ function buildServer() {
   app.register(import("./routes/projects.js"), { prefix: "/api/v1/projects" });
   app.register(import("./routes/tasks.js"), { prefix: "/api/v1/tasks" });
   app.register(import("./routes/artifacts.js"), { prefix: "/api/v1/tasks" });
-  // app.register(import("./routes/metrics.js"),  { prefix: "/api/v1/metrics" });
+  app.register(import("./routes/metrics.js"), { prefix: "/api/v1/metrics" });
 
   // -- WebSocket task-stream handler -----------------------------------------
   app.register(import("./ws/taskStream.js"), { prefix: "/ws/tasks" });
