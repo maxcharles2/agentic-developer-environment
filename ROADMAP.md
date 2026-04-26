@@ -136,8 +136,8 @@ Define and export all of the following, using Zod schemas with inferred TypeScri
 
 **Schemas (Zod objects) + inferred types:**
 - `TaskSchema` / `Task`: id (uuid string), project_id (uuid string), prompt (string), status (TaskStatus), metadata (record), created_at (ISO string), updated_at (ISO string)
-- `TaskStepSchema` / `TaskStep`: id, task_id, ordinal (number), title, description, status (StepStatus), agent_type (AgentType), input_data (record | null), output_data (record | null), started_at (string | null), completed_at (string | null)
-- `AgentRunSchema` / `AgentRun`: id, task_id, step_id (string | null), agent_type, model (string), status (AgentRunStatus), input_state, output_state, tokens_in (number), tokens_out (number), latency_ms (number), retry_count (number), created_at
+- `TaskStepSchema` / `TaskStep`: id, task_id, ordinal (number), title, description, status (StepStatus), agent_type (AgentType), input_data (record, default {}), output_data (record, default {}), started_at (string | null), completed_at (string | null)
+- `AgentRunSchema` / `AgentRun`: id, task_id, step_id (string | null), agent_type, model (string), status (AgentRunStatus), input_state, output_state, tokens_in (number | null), tokens_out (number | null), latency_ms (number | null), retry_count (number), created_at
 - `AgentMetricSchema` / `AgentMetric`: id, run_id, agent_type, metric_name, metric_value (number), labels (record), recorded_at
 - `CodeArtifactSchema` / `CodeArtifact`: id, run_id, task_id, file_path, content, diff (string | null), language, version (number), created_at
 - `ExecutionResultSchema` / `ExecutionResult`: id, run_id, task_id, command, stdout, stderr, exit_code (number), duration_ms (number), sandbox_id, created_at
