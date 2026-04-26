@@ -4,6 +4,7 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import websocket from "@fastify/websocket";
 import rateLimitPlugin from "./middleware/rateLimit.js";
+import grpcClientsPlugin from "./grpc/clients.js";
 import Redis from "ioredis";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -18,6 +19,8 @@ const envSchema = z.object({
   SUPABASE_URL: z.string(),
   SUPABASE_SERVICE_KEY: z.string(),
   ORCHESTRATOR_GRPC_URL: z.string().default("localhost:50051"),
+  SANDBOX_GRPC_URL: z.string().default("localhost:50052"),
+  CONTEXT_GRPC_URL: z.string().default("localhost:50053"),
   RATE_LIMIT_PER_MINUTE: z.coerce.number().default(100),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
@@ -80,6 +83,13 @@ function buildServer() {
     return { status: "ok", timestamp: new Date().toISOString() };
   });
 
+  // -- gRPC clients (decorated onto the Fastify instance) --------------------
+  app.register(grpcClientsPlugin, {
+    orchestratorUrl: config.ORCHESTRATOR_GRPC_URL,
+    sandboxUrl: config.SANDBOX_GRPC_URL,
+    contextUrl: config.CONTEXT_GRPC_URL,
+  });
+
   // -- Auth middleware --------------------------------------------------------
   app.register(authPlugin);
 
@@ -88,10 +98,7 @@ function buildServer() {
 
   // -- Route plugins ----------------------------------------------------------
   app.register(import("./routes/projects.js"), { prefix: "/api/v1/projects" });
-  app.register(import("./routes/tasks.js"), {
-    prefix: "/api/v1/tasks",
-    grpcUrl: config.ORCHESTRATOR_GRPC_URL,
-  });
+  app.register(import("./routes/tasks.js"), { prefix: "/api/v1/tasks" });
   app.register(import("./routes/artifacts.js"), { prefix: "/api/v1/tasks" });
   // app.register(import("./routes/metrics.js"),  { prefix: "/api/v1/metrics" });
 

@@ -1,8 +1,8 @@
 import fp from "fastify-plugin";
 import type { FastifyInstance } from "fastify";
 import { validateCreateTask, validateApproveStep } from "../middleware/validation.js";
-import { createOrchestratorClient } from "../grpc/orchestratorClient.js";
 import type { CreateTaskRequest, ApproveStepRequest } from "@ade/shared-types";
+import type { GrpcErrorInfo } from "../grpc/clients.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -15,22 +15,11 @@ function isUUID(value: string): boolean {
   return UUID_RE.test(value);
 }
 
-interface TasksPluginOptions {
-  grpcUrl?: string;
-}
-
 // ---------------------------------------------------------------------------
 // Plugin
 // ---------------------------------------------------------------------------
 
-async function plugin(
-  fastify: FastifyInstance,
-  opts: TasksPluginOptions,
-): Promise<void> {
-  const orchestrator = createOrchestratorClient(
-    opts.grpcUrl ?? "localhost:50051",
-  );
-
+async function plugin(fastify: FastifyInstance): Promise<void> {
   // -- POST / — Submit task --------------------------------------------------
 
   fastify.post<{ Body: CreateTaskRequest }>(
@@ -52,24 +41,32 @@ async function plugin(
 
       const task_id: string = data.id as string;
 
-      const stream = orchestrator.runWorkflow({ task_id, project_id, prompt });
-      const response: {
-        task_id: string;
-        status: string;
-        ws_url: string;
-        warning?: string;
-      } = {
+      // Fire-and-forget: kick off the gRPC server-stream in the background.
+      // Events propagate to the client via Redis/WebSocket (ws/taskStream).
+      void (async () => {
+        try {
+          for await (const _event of fastify.orchestratorClient.runWorkflow({
+            task_id,
+            project_id,
+            prompt,
+          })) {
+            // intentionally empty — events are forwarded by the orchestrator
+          }
+        } catch (err) {
+          const grpcErr = err as GrpcErrorInfo;
+          if (grpcErr.httpStatus === 503) {
+            fastify.log.warn({ task_id }, "Orchestrator unavailable — task queued");
+          } else {
+            fastify.log.error({ task_id, err }, "Orchestrator stream error");
+          }
+        }
+      })();
+
+      return reply.code(202).send({
         task_id,
         status: "pending",
         ws_url: `/ws/tasks/${task_id}`,
-      };
-
-      if (stream === null) {
-        request.log.warn({ task_id }, "Orchestrator unavailable — task queued");
-        response.warning = "Orchestrator unavailable — task queued";
-      }
-
-      return reply.code(202).send(response);
+      });
     },
   );
 
