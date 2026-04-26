@@ -1,0 +1,16 @@
+[project]
+name = "ade-types"
+version = "0.1.0"
+description = "Shared Pydantic models for the Agentic Developer Environment"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ade_types*"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
