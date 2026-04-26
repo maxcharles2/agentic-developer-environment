@@ -524,7 +524,7 @@ Read `CLAUDE.md` and `docs/architecture.md` Section 1 + Section 4a. The Gateway 
 
 ### `services/gateway/src/index.ts`
 Implement the Fastify server:
-1. Load environment variables: PORT (default 3000), REDIS_URL, SUPABASE_URL, SUPABASE_SERVICE_KEY, ORCHESTRATOR_GRPC_URL, LOG_LEVEL
+1. Load environment variables: GATEWAY_PORT (default 3000), REDIS_URL, SUPABASE_URL, SUPABASE_SERVICE_KEY, ORCHESTRATOR_GRPC_URL, LOG_LEVEL
 2. Create Fastify instance with pino logger
 3. Register plugins: @fastify/cors (allow all origins in dev), @fastify/helmet, @fastify/websocket
 4. Create and export Redis client (ioredis) as a shared instance — attach to `fastify.decorate('redis', redisClient)`
