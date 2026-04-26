@@ -1,0 +1,135 @@
+version: "3.8"
+
+services:
+  supabase-db:
+    image: supabase/postgres:15
+    ports:
+      - "5432:5432"
+    volumes:
+      - supabase-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ade-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ade-network
+
+  gateway:
+    build:
+      context: services/gateway
+    ports:
+      - "3000:3000"
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-http://supabase-db:5432}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      ORCHESTRATOR_GRPC_URL: ${ORCHESTRATOR_GRPC_URL:-orchestrator:50051}
+      GATEWAY_PORT: ${GATEWAY_PORT:-3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      NODE_ENV: ${NODE_ENV:-development}
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ade-network
+
+  orchestrator:
+    build:
+      context: services/orchestrator
+    ports:
+      - "50051:50051"
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-http://supabase-db:5432}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SANDBOX_GRPC_URL: ${SANDBOX_GRPC_URL:-sandbox:50052}
+      CONTEXT_GRPC_URL: ${CONTEXT_GRPC_URL:-context:50053}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ade-network
+
+  sandbox:
+    build:
+      context: services/sandbox
+    ports:
+      - "50052:50052"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DOCKER_SOCKET: ${DOCKER_SOCKET:-/var/run/docker.sock}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    restart: unless-stopped
+    networks:
+      - ade-network
+
+  context:
+    build:
+      context: services/context
+    ports:
+      - "50053:50053"
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-http://supabase-db:5432}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ade-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - gateway
+    restart: unless-stopped
+    networks:
+      - ade-network
+
+networks:
+  ade-network:
+    driver: bridge
+
+volumes:
+  supabase-data:
+  redis-data:
