@@ -219,3 +219,13 @@ export const CreateProjectRequestSchema = z
   })
   .strict();
 export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;
+
+export const UpdateProjectRequestSchema = z
+  .object({
+    name: z.string().optional(),
+    repo_url: z.string().nullable().optional(),
+    repo_path: z.string().nullable().optional(),
+    settings: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
+export type UpdateProjectRequest = z.infer<typeof UpdateProjectRequestSchema>;

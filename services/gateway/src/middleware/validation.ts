@@ -2,6 +2,7 @@ import type { FastifyRequest, FastifyReply, preHandlerHookHandler } from "fastif
 import {
   CreateTaskRequestSchema,
   CreateProjectRequestSchema,
+  UpdateProjectRequestSchema,
 } from "@ade/shared-types";
 
 // ---------------------------------------------------------------------------
@@ -48,3 +49,5 @@ export function createValidator<T>(
 export const validateCreateTask = createValidator(CreateTaskRequestSchema);
 
 export const validateCreateProject = createValidator(CreateProjectRequestSchema);
+
+export const validateUpdateProject = createValidator(UpdateProjectRequestSchema);
