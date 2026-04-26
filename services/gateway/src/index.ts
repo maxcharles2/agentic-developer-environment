@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import authPlugin from "./middleware/auth.js";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import websocket from "@fastify/websocket";
@@ -83,8 +84,8 @@ function buildServer() {
     return { status: "ok", timestamp: new Date().toISOString() };
   });
 
-  // -- TODO: Register auth middleware plugin ---------------------------------
-  // app.register(import("./plugins/auth.js"));
+  // -- Auth middleware --------------------------------------------------------
+  app.register(authPlugin);
 
   // -- TODO: Register rate-limit middleware plugin ---------------------------
   // app.register(import("./plugins/rateLimit.js"));
