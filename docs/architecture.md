@@ -96,7 +96,8 @@ agentic-developer-environment/
 │   └── proto/                         # gRPC service definitions
 │       ├── orchestrator.proto
 │       ├── sandbox.proto
-│       └── context.proto
+│       ├── context.proto
+│       └── buf.gen.yaml               # Protobuf codegen config
 │
 ├── services/
 │   ├── gateway/                       # TypeScript — REST API + WebSocket
@@ -143,6 +144,8 @@ agentic-developer-environment/
 │   │   │   │   ├── planner.md
 │   │   │   │   ├── codegen.md
 │   │   │   │   └── executor.md
+│   │   │   ├── events/
+│   │   │   │   └── publisher.py       # Redis pub/sub event emitter
 │   │   │   ├── server.py              # gRPC server entrypoint
 │   │   │   └── config.py
 │   │   ├── tests/
@@ -194,6 +197,7 @@ agentic-developer-environment/
 │   └── README.md
 │
 ├── ui/                                # React TypeScript frontend
+│   ├── public/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── TaskSubmit.tsx
@@ -213,7 +217,11 @@ agentic-developer-environment/
 │   │   │   └── client.ts              # Typed API client
 │   │   ├── store/
 │   │   │   └── index.ts               # Zustand state management
+│   │   ├── main.tsx                   # React entrypoint
 │   │   └── App.tsx
+│   ├── index.html                     # Vite HTML entry
+│   ├── tailwind.config.ts             # Tailwind CSS configuration
+│   ├── postcss.config.js              # PostCSS plugins (Tailwind, autoprefixer)
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── vite.config.ts

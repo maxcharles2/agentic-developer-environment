@@ -13,6 +13,7 @@ The system is built on a **Supervisor + Pipeline** multi-agent pattern orchestra
 ```
 agentic-developer-environment/
 ├── CLAUDE.md                          ← you are here
+├── ROADMAP.md                         ← module breakdown + plan prompts (47 modules)
 ├── README.md
 ├── docker-compose.yml                 ← all services + infra
 ├── .env.example
@@ -104,11 +105,13 @@ make clean
 | Topic | File |
 |---|---|
 | Full system design + diagrams | [`docs/architecture.md`](docs/architecture.md) |
+| MVP module breakdown + plan prompts | [`ROADMAP.md`](ROADMAP.md) |
 | REST, gRPC, and WebSocket contracts | [`docs/api-contracts.md`](docs/api-contracts.md) |
 | Database ERD + table DDL | [`docs/database-schema.md`](docs/database-schema.md) |
 | Architecture decisions (ADRs) | [`docs/decisions/`](docs/decisions/) |
 | LangGraph graph definitions | [`services/orchestrator/src/graphs/`](services/orchestrator/src/graphs/) |
 | Agent implementations | [`services/orchestrator/src/agents/`](services/orchestrator/src/agents/) |
 | Agent prompt templates | [`services/orchestrator/src/prompts/`](services/orchestrator/src/prompts/) |
+| Event publisher (Redis pub/sub) | [`services/orchestrator/src/events/`](services/orchestrator/src/events/) |
 | gRPC service definitions | [`packages/proto/`](packages/proto/) |
 | Shared Pydantic + TS types | [`packages/shared-types/`](packages/shared-types/) |
