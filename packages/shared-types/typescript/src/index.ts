@@ -210,6 +210,14 @@ export const CreateTaskResponseSchema = z
   .strict();
 export type CreateTaskResponse = z.infer<typeof CreateTaskResponseSchema>;
 
+export const ApproveStepRequestSchema = z
+  .object({
+    approved: z.boolean(),
+    feedback: z.string().optional(),
+  })
+  .strict();
+export type ApproveStepRequest = z.infer<typeof ApproveStepRequestSchema>;
+
 export const CreateProjectRequestSchema = z
   .object({
     name: z.string(),
