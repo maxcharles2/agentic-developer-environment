@@ -20,6 +20,7 @@ import redis.asyncio as aioredis
 from supabase import AsyncClient, acreate_client
 
 from src.config import settings
+from src.state import create_initial_state
 
 # ---------------------------------------------------------------------------
 # Optional proto imports — generated stubs may not exist during early dev
@@ -49,6 +50,85 @@ log = logging.getLogger(__name__)
 
 # Redis TTL for cancellation flags (10 minutes)
 _CANCEL_TTL_SECONDS = 600
+
+
+# ---------------------------------------------------------------------------
+# Per-node state-update → WorkflowEvent translator
+# ---------------------------------------------------------------------------
+
+def _node_updates_to_event(
+    node_name: str, node_updates: Any, task_id: str
+) -> dict[str, Any] | None:
+    """Convert a single LangGraph node-output chunk into a WorkflowEvent dict.
+
+    Returns ``None`` for chunks that carry no meaningful information.
+    """
+    ts = int(time.time() * 1000)
+
+    # LangGraph surfaces interrupt() as a special ``__interrupt__`` key
+    if node_name == "__interrupt__":
+        return {
+            "event_type": "workflow.human_review_required",
+            "step_id": None,
+            "payload": {"task_id": task_id, "message": "Human review required"},
+            "timestamp": ts,
+        }
+
+    if not isinstance(node_updates, dict):
+        return None
+
+    payload: dict[str, Any] = {"task_id": task_id, "node": node_name}
+
+    if node_name == "supervisor_node":
+        payload["next_agent"] = node_updates.get("next_agent", "")
+        if node_updates.get("error"):
+            payload["error"] = node_updates["error"]
+        event_type = "workflow.routing"
+
+    elif node_name == "planner_node":
+        steps = node_updates.get("steps") or []
+        payload["step_count"] = len(steps)
+        event_type = "workflow.planning"
+
+    elif node_name == "context_node":
+        chunks = node_updates.get("context_chunks") or []
+        payload["chunk_count"] = len(chunks)
+        event_type = "workflow.context"
+
+    elif node_name == "codegen_node":
+        artifacts = node_updates.get("artifacts") or []
+        payload["artifact_count"] = len(artifacts)
+        if artifacts:
+            last = artifacts[-1]
+            payload["last_artifact"] = getattr(last, "file_path", None) or (
+                last.get("file_path") if isinstance(last, dict) else None
+            )
+        event_type = "workflow.codegen"
+
+    elif node_name == "executor_node":
+        results = node_updates.get("execution_results") or []
+        payload["result_count"] = len(results)
+        if results:
+            last = results[-1]
+            success = getattr(last, "success", None)
+            if success is None and isinstance(last, dict):
+                success = last.get("success")
+            payload["success"] = success
+        event_type = "workflow.execution"
+
+    elif node_name == "human_review_node":
+        payload["requires_approval"] = node_updates.get("requires_approval", False)
+        event_type = "workflow.human_review"
+
+    else:
+        event_type = f"workflow.node.{node_name}"
+
+    return {
+        "event_type": event_type,
+        "step_id": None,
+        "payload": payload,
+        "timestamp": ts,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -90,22 +170,32 @@ class OrchestratorServicer:
             """Run the LangGraph graph and push events onto the queue."""
             try:
                 graph = self._graph_factory()
-                state = {
-                    "task_id": task_id,
-                    "project_id": project_id,
-                    "prompt": prompt,
-                    "events": [],
-                    "status": "running",
-                    "metadata": metadata,
+                state = create_initial_state(task_id, project_id, prompt)
+                # thread_id drives checkpointing; extra metadata is forwarded
+                # through configurable so subgraphs can inspect it.
+                graph_config: dict[str, Any] = {
+                    "configurable": {
+                        "thread_id": task_id,
+                        **metadata,
+                    }
                 }
-                async for chunk in graph.astream(state):
-                    # Each chunk is a dict keyed by node name; events list is
-                    # under the "events" key after the reducer has run.
+                async for chunk in graph.astream(state, config=graph_config):
+                    # Each chunk is keyed by node name (or "__interrupt__").
                     if isinstance(chunk, dict):
-                        for node_output in chunk.values():
-                            if isinstance(node_output, dict):
-                                for evt in node_output.get("events", []):
-                                    await queue.put(evt)
+                        for node_name, node_updates in chunk.items():
+                            evt = _node_updates_to_event(node_name, node_updates, task_id)
+                            if evt is not None:
+                                await queue.put(evt)
+
+                # Graph finished normally — emit a completion event.
+                await queue.put(
+                    {
+                        "event_type": "workflow.completed",
+                        "step_id": None,
+                        "payload": {"task_id": task_id},
+                        "timestamp": int(time.time() * 1000),
+                    }
+                )
             except Exception as exc:  # noqa: BLE001
                 log.exception("Graph error for task_id=%s: %s", task_id, exc)
                 await queue.put(
