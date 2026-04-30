@@ -16,8 +16,8 @@ import os
 from pathlib import Path
 from typing import Any
 
-from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
-from langchain_core.tools import tool
+from langchain_core.messages import AIMessage, BaseMessage, ToolMessage  # type: ignore[import]
+from langchain_core.tools import tool  # type: ignore[import]
 
 from src.config import settings
 from src.state.workflow import WorkflowState
@@ -139,11 +139,11 @@ def _get_context_llm() -> Any:
     """Return a ChatModel bound to the context tools."""
     model = settings.WORKER_MODEL
     if "claude" in model.lower() or "anthropic" in model.lower():
-        from langchain_anthropic import ChatAnthropic
+        from langchain_anthropic import ChatAnthropic  # type: ignore[import]
 
         llm = ChatAnthropic(model=model, api_key=settings.ANTHROPIC_API_KEY)
     else:
-        from langchain_openai import ChatOpenAI
+        from langchain_openai import ChatOpenAI  # type: ignore[import]
 
         llm = ChatOpenAI(model=model, api_key=settings.OPENAI_API_KEY)
     return llm.bind_tools([search_codebase, read_file])
